@@ -1,0 +1,28 @@
+package order;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.kafka.support.mapping.DefaultJackson2JavaTypeMapper;
+import org.springframework.kafka.support.mapping.Jackson2JavaTypeMapper;
+import org.springframework.kafka.support.serializer.JsonSerializer;
+
+@SpringBootApplication
+public class OrderApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(OrderApplication.class, args);
+	}
+	
+	@Bean
+	public JsonSerializer<Object> jsonSerializer() {
+	    Jackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
+	    javaTypeMapper.addTrustedPackages("order.DTO");
+
+	    JsonSerializer<Object> jsonSerializer = new JsonSerializer<>();
+	    jsonSerializer.setTypeMapper(javaTypeMapper);
+
+	    return jsonSerializer;
+	}
+
+}

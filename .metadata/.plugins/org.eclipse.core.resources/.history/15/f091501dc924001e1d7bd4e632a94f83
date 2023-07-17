@@ -1,0 +1,5 @@
+package notification.Dto;
+
+public class TestDto {
+
+}

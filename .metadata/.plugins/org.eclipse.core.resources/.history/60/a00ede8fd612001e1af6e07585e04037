@@ -1,0 +1,5 @@
+package order.Configurations;
+
+public class KafkaConfig {
+
+}

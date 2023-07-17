@@ -1,0 +1,118 @@
+
+server:
+  port: 0
+
+  
+spring:
+ kafka:
+    bootstrap-servers:
+    - localhost:9092
+    template:
+      default-topic: testTopic12
+    producer:
+      key-serializer:
+        org.apache.kafka.common.serialization.StringSerializer
+      value-serializer:
+        org.springframework.kafka.support.serializer.JsonSerializer
+    properties:
+      spring:
+          json:
+            add:
+              type:
+                headers: false
+            
+       
+      
+   
+ profiles:
+    active:
+    - test_service
+ cloud:
+    bus:
+      enabled: true
+      refresh:
+        enabled: true
+    config:
+      uri: http://localhost:8888
+      failFast: true
+      name: test_service
+    vault:
+      host: localhost
+      port: 8200
+      authentication: TOKEN
+      scheme: http
+      token: hvs.0QzcUCzFZBCYqLhstZ2kVh6w
+      application-name: OnlineShopping 
+ datasource:
+    url: jdbc:mysql://localhost:3306/MyOrder?createDatabaseIfNotExist=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+ zipkin:
+    base-url: http://localhost:9411
+ sleuth:
+    sampler:
+      probability: 1.0    
+  
+    
+ jpa:
+    hibernate:
+      ddl-auto: update        
+ application:
+    name: ORDER-SERVICE
+      
+ rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest   
+    
+#Actuator
+management:
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true   
+  endpoints:
+    web:
+      exposure:
+        include:
+        - '*'     
+             
+#Resilience4j Properties
+resilience4j:
+  circuitbreaker:
+    instances:
+      inventory:
+       register-health-indicator: true
+       event-consumer-buffer-size: 10
+       sliding-window-type: COUNT_BASED
+       sliding-window-size: 5
+       failure-rate-threshold: 50
+       wait-duration-in-open-state: 5s
+       permitted-number-of-calls-in-half-open-state: 3
+       automatic-transition-from-open-to-half-open-enabled: true         
+  timelimiter:
+    instances:
+     inventory: 
+        timeout-duration: 3s
+  retry:
+    instances:
+      inventory:
+       max-attempts: 3
+       wait-duration: 5s
+      
+
+  
+         
+               
+               
+eureka:
+  instance:
+    instance-id: ${spring.application.name}-${random.uuid}   
+     
+    
+
+
+       
+          

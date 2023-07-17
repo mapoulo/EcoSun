@@ -1,0 +1,65 @@
+package order.Controllers;
+
+import java.util.concurrent.CompletableFuture;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
+import order.DTO.OrderRequest;
+import order.Services.OrderSevice;
+
+@RestController
+@RequestMapping("/api/order")
+public class OrderController {
+
+
+	@Autowired
+	private OrderSevice orderService;
+	
+	@PostMapping("/place")
+	@ResponseStatus(HttpStatus.CREATED)
+	@CircuitBreaker(name="inventory", fallbackMethod = "saveOrderFallback")
+	@TimeLimiter(name="inventory")
+	@Retry(name="inventory")
+	public CompletableFuture<String> saveOrder(@RequestBody OrderRequest orderRequest) {
+		return CompletableFuture.supplyAsync(()-> orderService.saveOrder(orderRequest));
+	}
+	
+	
+	public CompletableFuture<String> saveOrderFallback(OrderRequest orderRequest, Exception e) {
+		return  CompletableFuture.supplyAsync(()-> "Sorry the Inventory Service is not available [Fallback Method]");
+	}
+	
+
+	
+	
+
+	@Autowired
+	private WebClient.Builder webClientBuilder;
+	
+	@GetMapping("/{value}")
+	public String getValue(@PathVariable String value) {
+	return	webClientBuilder.build().get()
+		.uri("http://localhost:50712/api/inventory/value",
+				urlBuilder -> urlBuilder.queryParam("skuCode", value).build())
+		.retrieve().bodyToMono(String.class).block();
+	}
+	
+	
+	@GetMapping("/hi")
+	@ResponseStatus(HttpStatus.OK)
+	public String sayHi() {
+		return "Hi Order Service";
+	}
+}

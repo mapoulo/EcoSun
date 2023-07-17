@@ -1,0 +1,75 @@
+package notification.service.project;
+
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.mapping.DefaultJackson2JavaTypeMapper;
+import org.springframework.kafka.support.mapping.Jackson2JavaTypeMapper;
+
+import lombok.extern.slf4j.Slf4j;
+
+@SpringBootApplication
+@Slf4j
+public class NotificationServiceApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(NotificationServiceApplication.class, args);
+	}
+	
+	
+	@Bean
+	public Jackson2JavaTypeMapper javaTypeMapper() {
+		Jackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
+		javaTypeMapper.addTrustedPackages("order.DTO");
+//	    DefaultJackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
+	    javaTypeMapper.addTrustedPackages("order.DTO", "java.util", "java.lang");
+	    return javaTypeMapper;
+	}
+	
+	
+
+//	public Map<String, Object> consumerConfig(){
+//		Map<String, Object> props = new HashMap<>();
+//		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+//		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringSerializer.class);
+//		props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringSerializer.class);
+//		return props;
+//	}
+//	
+//	
+//	@Bean
+//	public ConsumerFactory<String, String> consumerFactory(){
+//		return new DefaultKafkaConsumerFactory<>(consumerConfig());
+//	}
+//	
+//	@Bean
+//	public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, String>> factory(ConsumerFactory<String, String> consumerFactory){
+//		ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
+//		factory.setConsumerFactory(consumerFactory);
+//		return factory;
+//	}
+	
+	
+
+	
+	
+//	@Bean
+//	public JsonDeserializer<OrderEvent> jsonDeserializer() {
+//	    JsonDeserializer<OrderEvent> jsonDeserializer = new JsonDeserializer<>();
+//	    jsonDeserializer.addTrustedPackages(System.getenv("TRUSTED_PACKAGES"));
+//	    return jsonDeserializer;
+//	}
+
+	
+
+	@KafkaListener(topics = "testTopic12", groupId = "notificationId")
+	public void handleNotification(OrderEvent orderEvent) {
+		log.info("Received notification for order "+ orderEvent);
+	
+	}
+	
+	
+
+}

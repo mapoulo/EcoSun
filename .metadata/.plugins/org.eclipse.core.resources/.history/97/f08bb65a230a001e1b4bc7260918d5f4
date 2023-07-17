@@ -1,0 +1,95 @@
+package order.Services;
+
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.sleuth.Tracer;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import order.DTO.InventoryResponse;
+import order.DTO.OrderLineItemsDto;
+import order.DTO.OrderRequest;
+import order.Model.Order;
+import order.Model.OrderLineItems;
+import order.Repositories.OrderRepository;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+@Transactional
+public class OrderSevice {
+	
+
+	private final OrderRepository orderRepo;
+	private final Tracer tracer;
+
+	private final KafkaTemplate<String, String> kafkaTemplate;
+
+	@Autowired
+	private WebClient.Builder webClientBuilder;
+
+	public String saveOrder(OrderRequest orderRequest) {
+		Order order = new Order();
+		order.setOrderNumber(UUID.randomUUID().toString());
+
+		List<OrderLineItems> orderList = orderRequest.getOrderLineItems().stream()
+				.map(orderItemDto -> mapDTOtoOrderLineItem(orderItemDto)).toList();
+		order.setOrderLineItemsLists(orderList);
+		
+
+		List<String> skuCodes = order.getOrderLineItemsLists().stream().map(OrderLineItems::getSkuCode).toList();
+//		Span inventoryServiceLookup = tracer.nextSpan().name("inventoryServiceLookup");
+
+//		try (Tracer.SpanInScope spanInScope = tracer.withSpan(inventoryServiceLookup.start())) {
+		System.out.println("Before InventoryResponse "+skuCodes);
+		InventoryResponse[] inventoryArrayList = null;
+		try {
+			inventoryArrayList = webClientBuilder.build().get()
+					.uri("http://localhost:63577/api/inventory",
+							urlBuilder -> urlBuilder.queryParam("skuCode", skuCodes).build())
+					.retrieve().bodyToMono(InventoryResponse[].class).block();
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+			
+          
+			System.out.println("After InventoryResponse");
+			
+			boolean allProductsInStock = Arrays.stream(inventoryArrayList).toList().size() > 2;
+			if (allProductsInStock) {
+				orderRepo.save(order);
+//				kafkaTemplate.send("testTopic12", "The Order Number is: "+order.getOrderNumber());
+				log.info("saveOrder method in OrderService is executed. The order is placed successfully");
+				return "Order is placed successfully";
+			} else {
+				log.info("allProductsInStock is false");
+				throw new IllegalArgumentException("Item is not in stock");
+			}
+
+//		} finally {
+//			inventoryServiceLookup.start();
+//		}
+		
+
+	}
+
+	private OrderLineItems mapDTOtoOrderLineItem(OrderLineItemsDto orderLineItemsDto) {
+		OrderLineItems orderLineItems = new OrderLineItems();
+		orderLineItems.setPrice(orderLineItemsDto.getPrice());
+		orderLineItems.setQuantity(orderLineItemsDto.getQuantity());
+		orderLineItems.setSkuCode(orderLineItemsDto.getSkuCode());
+		return orderLineItems;
+	}
+
+	
+
+}
